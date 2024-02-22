@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "481057863031",
+    "project_id": "cookbookandshoplist",
+    "storage_bucket": "cookbookandshoplist.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:481057863031:android:7b44c6229cff07fdac5d72",
+        "android_client_info": {
+          "package_name": "com.example.cookbookandshoplist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7JA-rZH7IK-Sqxpl9JzdycouTlW-ienA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
