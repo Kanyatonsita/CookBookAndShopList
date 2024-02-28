@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">CookBookAndShopList</string>
+    <string name="my_account_text">Mitt konto</string>
+    <string name="log_in_text">Logga in</string>
+    <string name="message_textView">Logga in om du har ett konto om du inte har \nett konto klicka på registrera för att \nskapa ett konto.</string>
+    <string name="fill_login_message">Var god fyll i e-postadress och lösenord.</string>
+    <string name="fill_all_fields_message">Vänligen fyll i alla fält</string>
+    <string name="Welcome">Välkommen!!.</string>
+    <string name="No_account">Användaren har inget konto. \nvänligenskapa konto</string>
+    <string name="invalid_mail_message">Vänligen ange rätt E-postadress</string>
+    <string name="save_user_data_error_message">Fel vid sparande av användardata</string>
+    <string name="save_user_error_message">Lyckas inte skapa konto!</string>
+    <string name="save_user_message">Hurra! Du lyckas att skapat ett konto</string>
+
 </resources>

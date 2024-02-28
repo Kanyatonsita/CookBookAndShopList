@@ -1,16 +1,19 @@
 package com.example.cookbookandshoplist
 
 import android.content.Context
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat.startActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Firebase
 import com.google.firebase.storage.storage
 import com.bumptech.glide.Glide
+import com.google.firebase.auth.FirebaseAuth
 
 class RecipesAdapter (val context: Context, val recipes : List<FoodNameAndPicture>)
     : RecyclerView.Adapter<RecipesAdapter.ViewHolder>() {
@@ -35,7 +38,18 @@ class RecipesAdapter (val context: Context, val recipes : List<FoodNameAndPictur
             Glide.with(context)
                 .load(imageUrl)
                 .into(holder.foodImageView)}
+
+//        holder.favoriteImageButton.setOnClickListener{
+//            val auth = FirebaseAuth.getInstance()
+//            if (auth.currentUser != null) {
+//                startActivity(Intent(this, MainActivity::class.java))
+//            } else {
+//                startActivity(Intent(this, LogInActivity::class.java))
+//            }
+//        }
     }
+
+
 
     override fun getItemCount() = recipes.size
 
