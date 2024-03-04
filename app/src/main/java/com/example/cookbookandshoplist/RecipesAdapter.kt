@@ -39,7 +39,20 @@ class RecipesAdapter (val context: Context, val recipes : List<FoodNameAndPictur
                 .load(imageUrl)
                 .into(holder.foodImageView)}
 
-//        holder.favoriteImageButton.setOnClickListener{
+
+        holder.apply {
+            foodNameTextView.setOnClickListener {
+                val intent = Intent (context,FoodInfoActivity::class.java)
+                intent.putExtra("getFoodName",recipes[position].foodName)
+                intent.putExtra("getTime",recipes[position].time)
+                intent.putExtra("getIngredients",recipes[position].ingredients)
+                intent.putExtra("getMethod",recipes[position].method)
+                intent.putExtra("getImage",recipes[position].glideImageUrl)
+                context.startActivity(intent)
+            }
+        }
+
+ //          holder.favoriteImageButton.setOnClickListener{
 //            val auth = FirebaseAuth.getInstance()
 //            if (auth.currentUser != null) {
 //                startActivity(Intent(this, MainActivity::class.java))
@@ -47,6 +60,7 @@ class RecipesAdapter (val context: Context, val recipes : List<FoodNameAndPictur
 //                startActivity(Intent(this, LogInActivity::class.java))
 //            }
 //        }
+
     }
 
 
