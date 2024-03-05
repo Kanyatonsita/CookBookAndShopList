@@ -26,7 +26,6 @@ class FoodInfoActivity : AppCompatActivity() {
         imageFoodView = findViewById(R.id.imageFoodView)
 
 
-
         val intent = intent
 
         val getFoodName = intent.getStringExtra("getFoodName")
@@ -38,8 +37,14 @@ class FoodInfoActivity : AppCompatActivity() {
 
         nameTextView.text = getFoodName
         cookingTimeTextView.text = getTime
-        ingredientsTextView.text = getIngredients
-        methodTextView.text = getMethod
+
+        val ingredientsList = getIngredients?.split(", ")
+        val ingredientsListFinal = ingredientsList?.joinToString("\n") { it.capitalize() }
+        ingredientsTextView.text = ingredientsListFinal
+
+        val methodList = getMethod?.split(", ")
+        val methodListFinal = methodList?.joinToString("\n") { it.capitalize() }
+        methodTextView.text = methodListFinal
 
         Glide.with(this)
             .load(getImage)
