@@ -2,6 +2,7 @@ package com.example.cookbookandshoplist
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,12 +34,9 @@ class RecipesAdapter (val context: Context, val recipes : List<FoodNameAndPictur
         holder.foodNameTextView.text = foodRecipes.foodName
         holder.timeTextView.text = foodRecipes.time
 
-        val imageRef = Firebase.storage.reference.child("images/${foodRecipes.glideImageUrl}")
-        imageRef.downloadUrl.addOnSuccessListener { Uri -> val imageUrl = Uri.toString()
-            Glide.with(context)
-                .load(imageUrl)
-                .into(holder.foodImageView)}
-
+        Glide.with(holder.itemView.context)
+            .load(foodRecipes.glideImageUrl)
+            .into(holder.foodImageView)
 
         holder.apply {
             foodNameTextView.setOnClickListener {
@@ -50,6 +48,7 @@ class RecipesAdapter (val context: Context, val recipes : List<FoodNameAndPictur
                 intent.putExtra("getImage",recipes[position].glideImageUrl)
                 context.startActivity(intent)
             }
+            Log.d("URL_DEBUG", "Image URL: ${recipes[position].glideImageUrl}")
         }
 
  //          holder.favoriteImageButton.setOnClickListener{
@@ -62,8 +61,6 @@ class RecipesAdapter (val context: Context, val recipes : List<FoodNameAndPictur
 //        }
 
     }
-
-
 
     override fun getItemCount() = recipes.size
 
