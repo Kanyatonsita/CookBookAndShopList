@@ -11,5 +11,5 @@
     <string name="save_user_data_error_message">Fel vid sparande av användardata</string>
     <string name="save_user_error_message">Lyckas inte skapa konto!</string>
     <string name="save_user_message">Hurra! Du lyckas att skapat ett konto</string>
-
+    <string name="fetch_user_data_error_message">Error fetching user data</string>
 </resources>
