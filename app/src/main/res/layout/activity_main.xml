@@ -33,6 +33,7 @@
         android:padding="8dp"
         android:text="Logga in"
         android:textColor="@color/black"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

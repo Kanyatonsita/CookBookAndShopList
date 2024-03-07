@@ -93,6 +93,7 @@
         android:backgroundTint="@color/darkGreen"
         android:text="Skapa konto"
         android:textColor="@color/black"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextPassword" />
