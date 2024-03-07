@@ -40,7 +40,8 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
             .load(foodRecipes.glideImageUrl)
             .into(holder.foodImageView)
 
-        var isFavorite = false // Create a boolean to keep track of the favorites status
+        // Retrieve the favorite status from SharedPreferences
+        var isFavorite = foodRecipes.foodName?.let { getFavoriteStatus(it) }
 
 
         holder.apply {
@@ -56,7 +57,7 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
             }
 
             // Update the favorite button image based on the favorite status
-            updateFavoriteButtonImage(favoriteImageButton, isFavorite)
+            isFavorite?.let { updateFavoriteButtonImage(favoriteImageButton, it) }
 
             favoriteImageButton.setOnClickListener { view ->
                 val auth = FirebaseAuth.getInstance()
@@ -69,10 +70,11 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
                     val selectedRecipe = recipes[position]
 
                     // Change the favorite status and update the image of the button
-                    isFavorite = !isFavorite
-                    updateFavoriteButtonImage(favoriteImageButton, isFavorite)
+                    isFavorite = !isFavorite!!
+                    isFavorite?.let { updateFavoriteButtonImage(favoriteImageButton, it) }
 
-                    if (isFavorite) {
+
+                    if (isFavorite == true) {
                         favoriteRecipesRef.add(selectedRecipe)
                             .addOnSuccessListener {
                                 Log.d("FAVORITE", "Recipe added to favorites.")
@@ -99,6 +101,9 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
                                 Log.e("FAVORITE", "Error getting documents: ", exception)
                             }
                     }
+
+                    //Save the updated favorite status to SharedPreferences
+                    foodRecipes.foodName?.let { saveFavoriteStatus(it, isFavorite!!) }
                 } else {
                     // If the user is not logged in, navigate them to the login page
                     val intent = Intent(context, LogInActivity::class.java)
@@ -124,6 +129,20 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
         } else {
             button.setImageResource(R.drawable.heart)
         }
+    }
+
+    // Function to get the favorite status from SharedPreferences
+    private fun getFavoriteStatus(foodName: String): Boolean {
+        val sharedPreferences = context.getSharedPreferences("Favorites", Context.MODE_PRIVATE)
+        return sharedPreferences.getBoolean(foodName, false)
+    }
+
+    // Function to save the favorite status to SharedPreferences
+    private fun saveFavoriteStatus(foodName: String, isFavorite: Boolean) {
+        val sharedPreferences = context.getSharedPreferences("Favorites", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putBoolean(foodName, isFavorite)
+        editor.apply()
     }
 
 }
