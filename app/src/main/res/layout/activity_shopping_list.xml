@@ -38,7 +38,7 @@
         android:layout_marginTop="10dp"
         android:background="@drawable/recipes_background"
         android:drawableLeft="@drawable/baseline_edit_24"
-        android:drawablePadding="10dp"
+        android:drawablePadding="5dp"
         android:ems="10"
         android:hint="Lägg till"
         android:inputType="text"
@@ -60,4 +60,14 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/shopListEditText"
         app:layout_constraintTop_toBottomOf="@+id/listTextView" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/shoppingListRecyclerView"
+        android:layout_width="409dp"
+        android:layout_height="550dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/shopListEditText"
+        tools:listitem="@layout/shopping_item" />
 </androidx.constraintlayout.widget.ConstraintLayout>

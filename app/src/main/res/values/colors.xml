@@ -7,5 +7,6 @@
     <color name="orange">#F66943</color>
     <color name="gray">#D7D7D7</color>
     <color name="lightGray">#F3F2F2</color>
+    <color name="transparent">#B3737373</color>
 
 </resources>

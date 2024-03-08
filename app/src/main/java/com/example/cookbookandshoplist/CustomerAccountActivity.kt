@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.TextView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -26,7 +28,35 @@ class CustomerAccountActivity : AppCompatActivity() {
 
 
         getUserInfo(currentUser.uid)
+        getFavoriteList(currentUser.uid)
     }
+
+    fun getFavoriteList(uid: String) {
+        val db = Firebase.firestore
+        val favoriteListRef = db.collection("users").document(uid).collection("favoriteRecipes")
+
+        favoriteListRef.addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                Log.e("!!!", "Error fetching favorite list", e)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null) {
+                val favoriteList = mutableListOf<FoodNameAndPicture>()
+                for (doc in snapshot.documents) {
+                    val favoriteItem = doc.toObject(FoodNameAndPicture::class.java)
+                    favoriteItem?.let {
+                        favoriteList.add(it)
+                    }
+                }
+                val recyclerView = findViewById<RecyclerView>(R.id.favoriteListRecyclerView)
+                recyclerView.layoutManager = LinearLayoutManager(this)
+                val adapter = FavoriteListAdapter(this, favoriteList)
+                recyclerView.adapter = adapter
+            }
+        }
+    }
+
 
 
     fun getUserInfo(uid: String) {
