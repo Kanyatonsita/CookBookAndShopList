@@ -54,6 +54,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:backgroundTint="@color/yellow"
+        android:onClick="addItem"
         android:text="Lägg till"
         android:textColor="@color/black"
         android:textStyle="bold"
