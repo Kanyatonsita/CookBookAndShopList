@@ -37,12 +37,12 @@
         android:id="@+id/textViewFoodName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="10dp"
         android:text="FoodName"
         android:textColor="@color/black"
         android:textSize="24sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/favoriteImageView"
         app:layout_constraintTop_toTopOf="parent" />
 
