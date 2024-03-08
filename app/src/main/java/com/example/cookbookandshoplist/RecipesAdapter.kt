@@ -39,102 +39,84 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
             .load(foodRecipes.glideImageUrl)
             .into(holder.foodImageView)
 
+        val userId = getCurrentUserId()
 
-        holder.apply {
-            foodNameTextView.setOnClickListener {
-                val intent = Intent(context, FoodInfoActivity::class.java).apply {
-                    putExtra("getFoodName", recipes[position].foodName)
-                    putExtra("getTime", recipes[position].time)
-                    putExtra("getIngredients", recipes[position].ingredients)
-                    putExtra("getMethod", recipes[position].method)
-                    putExtra("getImage", recipes[position].glideImageUrl)
+        if (userId != null) {
+            val favoriteRecipesRef = FirebaseFirestore.getInstance().collection("users").document(userId)
+                .collection("favoriteRecipes").whereEqualTo("foodName", foodRecipes.foodName)
+
+            favoriteRecipesRef.get()
+                .addOnSuccessListener { documents ->
+                    val isFavorite = !documents.isEmpty
+                    updateFavoriteButtonImage(holder.favoriteImageButton, isFavorite)
+
+                    holder.favoriteImageButton.setOnClickListener {
+                        toggleFavoriteStatus(holder, foodRecipes, userId)
+                    }
                 }
+                .addOnFailureListener { exception ->
+                    Log.e("FAVORITE", "Error getting documents: ", exception)
+                }
+        } else {
+            // User is not logged in, display default favorite button image
+            holder.favoriteImageButton.setImageResource(R.drawable.heart)
+            // Redirect user to login page if they try to interact with the favorite button
+            holder.favoriteImageButton.setOnClickListener {
+                val intent = Intent(context, LogInActivity::class.java)
                 context.startActivity(intent)
             }
+        }
 
-            // Check if the user is logged in
-            val currentUser = auth.currentUser
+        holder.foodNameTextView.setOnClickListener {
+            val intent = Intent(context, FoodInfoActivity::class.java).apply {
+                putExtra("getFoodName", foodRecipes.foodName)
+                putExtra("getTime", foodRecipes.time)
+                putExtra("getIngredients", foodRecipes.ingredients)
+                putExtra("getMethod", foodRecipes.method)
+                putExtra("getImage", foodRecipes.glideImageUrl)
+            }
+            context.startActivity(intent)
+        }
+    }
+    private fun toggleFavoriteStatus(holder: ViewHolder, recipe: FoodNameAndPicture, userId: String) {
+        val firebase = FirebaseFirestore.getInstance()
+        val favoriteRecipesRef = firebase.collection("users").document(userId)
+            .collection("favoriteRecipes")
 
-            if (currentUser != null) {
-                // Hämta favoritstatus baserat på användar-ID
-                val userId = getCurrentUserId()
-
-                if (userId != null) {
-                    // Hämta favoritstatus för användaren från databasen
-                    val firebase = FirebaseFirestore.getInstance()
-                    val favoriteRecipesRef = firebase.collection("users").document(userId)
-                        .collection("favoriteRecipes").whereEqualTo("foodName", foodRecipes.foodName)
-
-                    favoriteRecipesRef.get()
-                        .addOnSuccessListener { documents ->
-                            if (!documents.isEmpty) {
-                                // Receptet finns i användarens favoriter i databasen, uppdatera favoritknappens bild
-                                updateFavoriteButtonImage(holder.favoriteImageButton, true)
-                            } else {
-                                // Receptet finns inte i användarens favoriter i databasen, uppdatera favoritknappens bild
-                                updateFavoriteButtonImage(holder.favoriteImageButton, false)
-                            }
+        favoriteRecipesRef.whereEqualTo("foodName", recipe.foodName)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    // Recipe is not in favorites, add it
+                    favoriteRecipesRef.add(recipe)
+                        .addOnSuccessListener {
+                            Log.d("FAVORITE", "Recipe added to favorites.")
+                            updateFavoriteButtonImage(holder.favoriteImageButton, true)
+                            // Save the updated favorite status to SharedPreferences
+                            recipe.foodName?.let { saveFavoriteStatusForUser(it, true, userId) }
                         }
-                        .addOnFailureListener { exception ->
-                            Log.e("FAVORITE", "Error getting documents: ", exception)
+                        .addOnFailureListener { e ->
+                            Log.e("FAVORITE", "Error adding recipe to favorites", e)
                         }
-                }
-
-                // Update the favorite button image based on the favorite status
-                val isFavorite = foodRecipes.foodName?.let { getFavoriteStatusForUser(it, userId) }
-
-                favoriteImageButton.setOnClickListener { view ->
-                    val firebase = FirebaseFirestore.getInstance()
-                    val userId = currentUser.uid
-                    val favoriteRecipesRef = firebase.collection("users").document(userId)
-                        .collection("favoriteRecipes")
-                    val selectedRecipe = recipes[position]
-
-                    // Change the favorite status and update the image of the button
-                    val newFavoriteStatus = !isFavorite!!
-                    updateFavoriteButtonImage(favoriteImageButton, newFavoriteStatus)
-
-                    if (newFavoriteStatus) {
-                        favoriteRecipesRef.add(selectedRecipe)
+                } else {
+                    // Recipe is in favorites, remove it
+                    for (document in documents) {
+                        document.reference.delete()
                             .addOnSuccessListener {
-                                Log.d("FAVORITE", "Recipe added to favorites.")
+                                Log.d("FAVORITE", "Recipe removed from favorites.")
+                                updateFavoriteButtonImage(holder.favoriteImageButton, false)
+                                // Save the updated favorite status to SharedPreferences
+                                recipe.foodName?.let { saveFavoriteStatusForUser(it, false, userId) }
                             }
                             .addOnFailureListener { e ->
-                                Log.e("FAVORITE", "Error adding recipe to favorites", e)
-                            }
-                    } else {
-                        // Remove the recipe from favorites if it is already a favorite
-                        favoriteRecipesRef.whereEqualTo("foodName", selectedRecipe.foodName)
-                            .get()
-                            .addOnSuccessListener { documents ->
-                                for (document in documents) {
-                                    document.reference.delete()
-                                        .addOnSuccessListener {
-                                            Log.d("FAVORITE", "Recipe removed from favorites.")
-                                        }
-                                        .addOnFailureListener { e ->
-                                            Log.e("FAVORITE", "Error removing recipe from favorites", e)
-                                        }
-                                }
-                            }
-                            .addOnFailureListener { exception ->
-                                Log.e("FAVORITE", "Error getting documents: ", exception)
+                                Log.e("FAVORITE", "Error removing recipe from favorites", e)
                             }
                     }
-
-                    // Save the updated favorite status to SharedPreferences
-                    foodRecipes.foodName?.let { saveFavoriteStatusForUser(it, newFavoriteStatus, userId) }
-                }
-            } else {
-                // User is not logged in, display default favorite button image
-                favoriteImageButton.setImageResource(R.drawable.heart)
-                // Redirect user to login page if they try to interact with the favorite button
-                favoriteImageButton.setOnClickListener {
-                    val intent = Intent(context, LogInActivity::class.java)
-                    context.startActivity(intent)
                 }
             }
-        }
+            .addOnFailureListener { exception ->
+                Log.e("FAVORITE", "Error getting documents: ", exception)
+            }
     }
 
     override fun getItemCount() = recipes.size
@@ -157,15 +139,6 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
 
     private fun getCurrentUserId(): String? {
         return FirebaseAuth.getInstance().currentUser?.uid
-    }
-
-    private fun getFavoriteStatusForUser(foodName: String, userId: String?): Boolean {
-        if (userId.isNullOrEmpty()) {
-            return false // Om användar-ID är tomt, returnera false (standardvärde)
-        }
-
-        val sharedPreferences = context.getSharedPreferences("Favorites_$userId", Context.MODE_PRIVATE)
-        return sharedPreferences.getBoolean(foodName, false)
     }
 
     private fun saveFavoriteStatusForUser(foodName: String, isFavorite: Boolean, userId: String?) {
