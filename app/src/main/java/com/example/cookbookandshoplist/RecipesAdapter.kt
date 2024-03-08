@@ -1,6 +1,6 @@
 package com.example.cookbookandshoplist
 
-import android.content.ContentValues.TAG
+
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -10,12 +10,7 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
-import androidx.core.content.ContextCompat.getString
-import androidx.core.content.ContextCompat.startActivity
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.Firebase
-import com.google.firebase.storage.storage
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -25,6 +20,9 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
 
     var layoutInflater = LayoutInflater.from(context)
 
+    lateinit var auth: FirebaseAuth
+
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val recipesItemView = layoutInflater.inflate(R.layout.recipes_item, parent, false)
         return ViewHolder(recipesItemView)
@@ -32,6 +30,7 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val foodRecipes = recipes[position]
+        auth = FirebaseAuth.getInstance()
 
         holder.foodNameTextView.text = foodRecipes.foodName
         holder.timeTextView.text = foodRecipes.time
@@ -39,9 +38,6 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
         Glide.with(holder.itemView.context)
             .load(foodRecipes.glideImageUrl)
             .into(holder.foodImageView)
-
-        // Retrieve the favorite status from SharedPreferences
-        var isFavorite = foodRecipes.foodName?.let { getFavoriteStatus(it) }
 
 
         holder.apply {
@@ -56,25 +52,49 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
                 context.startActivity(intent)
             }
 
-            // Update the favorite button image based on the favorite status
-            isFavorite?.let { updateFavoriteButtonImage(favoriteImageButton, it) }
+            // Check if the user is logged in
+            val currentUser = auth.currentUser
 
-            favoriteImageButton.setOnClickListener { view ->
-                val auth = FirebaseAuth.getInstance()
-                val currentUser = auth.currentUser
-                val firebase = FirebaseFirestore.getInstance()
-                if (currentUser != null) {
+            if (currentUser != null) {
+                // Hämta favoritstatus baserat på användar-ID
+                val userId = getCurrentUserId()
+
+                if (userId != null) {
+                    // Hämta favoritstatus för användaren från databasen
+                    val firebase = FirebaseFirestore.getInstance()
+                    val favoriteRecipesRef = firebase.collection("users").document(userId)
+                        .collection("favoriteRecipes").whereEqualTo("foodName", foodRecipes.foodName)
+
+                    favoriteRecipesRef.get()
+                        .addOnSuccessListener { documents ->
+                            if (!documents.isEmpty) {
+                                // Receptet finns i användarens favoriter i databasen, uppdatera favoritknappens bild
+                                updateFavoriteButtonImage(holder.favoriteImageButton, true)
+                            } else {
+                                // Receptet finns inte i användarens favoriter i databasen, uppdatera favoritknappens bild
+                                updateFavoriteButtonImage(holder.favoriteImageButton, false)
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.e("FAVORITE", "Error getting documents: ", exception)
+                        }
+                }
+
+                // Update the favorite button image based on the favorite status
+                val isFavorite = foodRecipes.foodName?.let { getFavoriteStatusForUser(it, userId) }
+
+                favoriteImageButton.setOnClickListener { view ->
+                    val firebase = FirebaseFirestore.getInstance()
                     val userId = currentUser.uid
                     val favoriteRecipesRef = firebase.collection("users").document(userId)
                         .collection("favoriteRecipes")
                     val selectedRecipe = recipes[position]
 
                     // Change the favorite status and update the image of the button
-                    isFavorite = !isFavorite!!
-                    isFavorite?.let { updateFavoriteButtonImage(favoriteImageButton, it) }
+                    val newFavoriteStatus = !isFavorite!!
+                    updateFavoriteButtonImage(favoriteImageButton, newFavoriteStatus)
 
-
-                    if (isFavorite == true) {
+                    if (newFavoriteStatus) {
                         favoriteRecipesRef.add(selectedRecipe)
                             .addOnSuccessListener {
                                 Log.d("FAVORITE", "Recipe added to favorites.")
@@ -102,10 +122,14 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
                             }
                     }
 
-                    //Save the updated favorite status to SharedPreferences
-                    foodRecipes.foodName?.let { saveFavoriteStatus(it, isFavorite!!) }
-                } else {
-                    // If the user is not logged in, navigate them to the login page
+                    // Save the updated favorite status to SharedPreferences
+                    foodRecipes.foodName?.let { saveFavoriteStatusForUser(it, newFavoriteStatus, userId) }
+                }
+            } else {
+                // User is not logged in, display default favorite button image
+                favoriteImageButton.setImageResource(R.drawable.heart)
+                // Redirect user to login page if they try to interact with the favorite button
+                favoriteImageButton.setOnClickListener {
                     val intent = Intent(context, LogInActivity::class.java)
                     context.startActivity(intent)
                 }
@@ -122,7 +146,7 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
         var favoriteImageButton = itemView.findViewById<ImageButton>(R.id.favoriteImageButton)
     }
 
-     //Function to update the favorite button image based on the favorite status
+    //Function to update the favorite button image based on the favorite status
     private fun updateFavoriteButtonImage(button: ImageButton, isFavorite: Boolean) {
         if (isFavorite) {
             button.setImageResource(R.drawable.fillheart)
@@ -131,15 +155,25 @@ class RecipesAdapter(val context: Context, val recipes: List<FoodNameAndPicture>
         }
     }
 
-    // Function to get the favorite status from SharedPreferences
-    private fun getFavoriteStatus(foodName: String): Boolean {
-        val sharedPreferences = context.getSharedPreferences("Favorites", Context.MODE_PRIVATE)
+    private fun getCurrentUserId(): String? {
+        return FirebaseAuth.getInstance().currentUser?.uid
+    }
+
+    private fun getFavoriteStatusForUser(foodName: String, userId: String?): Boolean {
+        if (userId.isNullOrEmpty()) {
+            return false // Om användar-ID är tomt, returnera false (standardvärde)
+        }
+
+        val sharedPreferences = context.getSharedPreferences("Favorites_$userId", Context.MODE_PRIVATE)
         return sharedPreferences.getBoolean(foodName, false)
     }
 
-    // Function to save the favorite status to SharedPreferences
-    private fun saveFavoriteStatus(foodName: String, isFavorite: Boolean) {
-        val sharedPreferences = context.getSharedPreferences("Favorites", Context.MODE_PRIVATE)
+    private fun saveFavoriteStatusForUser(foodName: String, isFavorite: Boolean, userId: String?) {
+        if (userId.isNullOrEmpty()) {
+            return // Om användar-ID är tomt, gör inget
+        }
+
+        val sharedPreferences = context.getSharedPreferences("Favorites_$userId", Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         editor.putBoolean(foodName, isFavorite)
         editor.apply()
