@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Firebase
@@ -66,20 +67,29 @@ class ShoppingListActivity : AppCompatActivity() {
     fun addItem(view: View) {
         val itemName = shopListEditText.text.toString()
         if (itemName.isNotEmpty()) {
-            val item = ShoppingItem(name = itemName, done = false)
-            shopListEditText.setText("")
+            val existingItem = shoppingItems.find { it.name == itemName }
+            if (existingItem != null) {
+                // Om varan redan finns i listan, meddela användaren eller ignorerar tillägget
+                Toast.makeText(this, "Varan finns redan i listan!", Toast.LENGTH_SHORT).show()
+            } else {
+                // Om varan inte finns i listan, lägg till den
+                val item = ShoppingItem(name = itemName, done = false)
+                shopListEditText.setText("")
 
-            val user = auth.currentUser
-            if (user != null) {
-                db.collection("users").document(user.uid)
-                    .collection("shoppingItems").add(item)
-                    .addOnSuccessListener { documentReference ->
-                        Log.d(TAG, "DocumentSnapshot added with ID: ${documentReference.id}")
-                    }
-                    .addOnFailureListener { e ->
-                        Log.w(TAG, "Error adding document", e)
-                    }
+                val user = auth.currentUser
+                if (user != null) {
+                    db.collection("users").document(user.uid)
+                        .collection("shoppingItems").add(item)
+                        .addOnSuccessListener { documentReference ->
+                            Log.d(TAG, "DocumentSnapshot added with ID: ${documentReference.id}")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w(TAG, "Error adding document", e)
+                        }
+                }
             }
+        } else {
+            Toast.makeText(this, "Vänligen ange varor!", Toast.LENGTH_SHORT).show()
         }
     }
 

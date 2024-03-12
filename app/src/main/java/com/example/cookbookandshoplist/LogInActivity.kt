@@ -59,6 +59,7 @@ class LogInActivity : AppCompatActivity() {
     fun goToMainActivity() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
+        finish()
     }
 
     fun goToCreateAccountActivity (view : View) {
