@@ -89,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // No user is logged in, navigate to login page
             startActivity(Intent(this, LogInActivity::class.java))
+            finish()
         }
     }
 
@@ -100,6 +101,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // No user is logged in, navigate to login page
             startActivity(Intent(this, LogInActivity::class.java))
+            finish()
         }
     }
 

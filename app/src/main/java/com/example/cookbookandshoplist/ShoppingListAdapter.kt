@@ -1,5 +1,6 @@
 package com.example.cookbookandshoplist
 
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-class ShoppingListAdapter (val context: Context, private val shoppingList: List<ShoppingItem>) :
+class ShoppingListAdapter (val context: Context, private val shoppingList: MutableList<ShoppingItem>) :
     RecyclerView.Adapter<ShoppingListAdapter.ViewHolder>(){
 
     var layoutInflater = LayoutInflater.from(context)
@@ -27,47 +28,49 @@ class ShoppingListAdapter (val context: Context, private val shoppingList: List<
         val shoppingItems = shoppingList[position]
 
         holder.shoppingItemTextView.text = shoppingItems.name
-        holder.shoppingListCheckBox.isChecked = shoppingItems.done
+        holder.shoppingListCheckBox.isChecked = shoppingItems.done // Sätt CheckBox-tillståndet baserat på datan i ShoppingItem
+
+        holder.shoppingListCheckBox.setOnCheckedChangeListener(null) // Ta bort eventuell tidigare lyssnare
 
         holder.shoppingListCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            shoppingItems.done = isChecked
+            shoppingItems.done = isChecked // Uppdatera ShoppingItem-done-attributet
             updateItemInFirestore(shoppingItems)
         }
 
-        holder.imageButtonDelete.setOnClickListener{
-            val auth = FirebaseAuth.getInstance()
-            val currentUser = auth.currentUser
-            val firebase = FirebaseFirestore.getInstance()
-            if (currentUser != null) {
-                val userId = currentUser.uid
-                val shoppingListRef = firebase.collection("users").document(userId)
-                    .collection("shoppingItems")
-                val selectedRecipe = shoppingList[position]
-
-                shoppingListRef.whereEqualTo("name", selectedRecipe.name)
-                    .get()
-                    .addOnSuccessListener { documents ->
-                        for (document in documents) {
-                            document.reference.delete()
-                                .addOnSuccessListener {
-                                    Log.d("ITEM", "Recipe removed from shoppingList.")
-                                }
-                                .addOnFailureListener { e ->
-                                    Log.e("ITEM", "Error removing recipe from shoppingLIst", e)
-                                }
-                        }
-                    }
-                    .addOnFailureListener { exception ->
-                        Log.e("ITEM", "Error getting documents: ", exception)
-                    }
-            }
-        }
     }
     override fun getItemCount() = shoppingList.size
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var shoppingItemTextView= itemView.findViewById<TextView>(R.id.shoppingItemTextView)
         var imageButtonDelete = itemView.findViewById<ImageButton>(R.id.imageButtonDelete)
         var shoppingListCheckBox = itemView.findViewById<CheckBox>(R.id.shoppingListCheckBox)
+
+        init {
+            imageButtonDelete.setOnClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val itemToRemove = shoppingList[position]
+                    deleteItem(itemToRemove)
+                }
+            }
+        }
+    }
+
+    private fun deleteItem(item: ShoppingItem) {
+        val user = FirebaseAuth.getInstance().currentUser
+        val userId = user?.uid
+        if (userId != null) {
+            val db = FirebaseFirestore.getInstance()
+            val itemRef = db.collection("users").document(userId).collection("shoppingItems").document(item.documentId!!)
+            itemRef.delete()
+                .addOnSuccessListener {
+                    Log.d(TAG, "Item deleted successfully")
+                    shoppingList.remove(item)
+                    notifyDataSetChanged()
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error deleting item", e)
+                }
+        }
     }
 
     private fun updateItemInFirestore(shoppingItem: ShoppingItem) {
