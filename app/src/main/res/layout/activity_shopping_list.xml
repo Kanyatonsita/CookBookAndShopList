@@ -65,7 +65,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/shoppingListRecyclerView"
         android:layout_width="395dp"
-        android:layout_height="544dp"
+        android:layout_height="525dp"
         android:layout_marginTop="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

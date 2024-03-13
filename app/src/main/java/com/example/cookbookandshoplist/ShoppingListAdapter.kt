@@ -13,6 +13,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.Date
 
 class ShoppingListAdapter (val context: Context, private val shoppingList: MutableList<ShoppingItem>) :
     RecyclerView.Adapter<ShoppingListAdapter.ViewHolder>(){
@@ -28,12 +29,15 @@ class ShoppingListAdapter (val context: Context, private val shoppingList: Mutab
         val shoppingItems = shoppingList[position]
 
         holder.shoppingItemTextView.text = shoppingItems.name
-        holder.shoppingListCheckBox.isChecked = shoppingItems.done // Sätt CheckBox-tillståndet baserat på datan i ShoppingItem
 
-        holder.shoppingListCheckBox.setOnCheckedChangeListener(null) // Ta bort eventuell tidigare lyssnare
+        // Sätt CheckBox-tillståndet baserat på datan i ShoppingItem
+        holder.shoppingListCheckBox.isChecked = shoppingItems.done
 
-        holder.shoppingListCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            shoppingItems.done = isChecked // Uppdatera ShoppingItem-done-attributet
+        // Set a click listener for the CheckBox
+        holder.shoppingListCheckBox.setOnClickListener {
+            // Update the ShoppingItem done attribute
+            shoppingItems.done = holder.shoppingListCheckBox.isChecked
+            // Update the item in Firestore
             updateItemInFirestore(shoppingItems)
         }
 
@@ -77,6 +81,9 @@ class ShoppingListAdapter (val context: Context, private val shoppingList: Mutab
         val auth = FirebaseAuth.getInstance()
         val userCurrent = auth.currentUser
         val firebase = FirebaseFirestore.getInstance()
+        val updateTimestamp = Date()
+
+        shoppingItem.timestamp = updateTimestamp
 
         if (userCurrent != null) {
             val userId = userCurrent.uid
