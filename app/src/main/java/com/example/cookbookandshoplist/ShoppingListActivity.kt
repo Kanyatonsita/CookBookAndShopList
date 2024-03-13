@@ -15,8 +15,10 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObject
+import java.util.Date
 
 class ShoppingListActivity : AppCompatActivity() {
 
@@ -47,7 +49,7 @@ class ShoppingListActivity : AppCompatActivity() {
         val uid = currentUser.uid
         val shoppingListRef = db.collection("users").document(uid).collection("shoppingItems")
 
-        shoppingListRef.addSnapshotListener { snapshot, e ->
+        shoppingListRef.orderBy("timestamp", Query.Direction.ASCENDING).addSnapshotListener { snapshot, e ->
             if (snapshot != null) {
                 shoppingItems.clear()
                 for (document in snapshot.documents) {
@@ -72,8 +74,10 @@ class ShoppingListActivity : AppCompatActivity() {
                 // Om varan redan finns i listan, meddela användaren eller ignorerar tillägget
                 Toast.makeText(this, "Varan finns redan i listan!", Toast.LENGTH_SHORT).show()
             } else {
+
+                val itemTimestamp = Date()
                 // Om varan inte finns i listan, lägg till den
-                val item = ShoppingItem(name = itemName, done = false)
+                val item = ShoppingItem(name = itemName, done = false, timestamp = itemTimestamp)
                 shopListEditText.setText("")
 
                 val user = auth.currentUser
@@ -99,6 +103,8 @@ class ShoppingListActivity : AppCompatActivity() {
 }
 
 
-data class ShoppingItem (@DocumentId var documentId : String? = null,
+data class ShoppingItem (
+                 @DocumentId var documentId : String? = null,
                  var name : String? = null,
-                 var done: Boolean = false)
+                 var done: Boolean = false,
+                 var timestamp: Date? = null )
