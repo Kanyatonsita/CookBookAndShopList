@@ -1,10 +1,12 @@
 package com.example.cookbookandshoplist
 
+
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -13,11 +15,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObject
+import com.squareup.picasso.Picasso
 
 class CustomerAccountActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var currentUser: FirebaseUser
+    private lateinit var userProfilePic: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,12 +30,23 @@ class CustomerAccountActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         currentUser = auth.currentUser!!
 
+        userProfilePic = findViewById(R.id.customerImageView)
 
+        downloadImage()
         getUserInfo(currentUser.uid)
         getFavoriteList(currentUser.uid)
     }
 
-    fun getFavoriteList(uid: String) {
+    private fun downloadImage(){
+        val db = Firebase.firestore
+        val currentUser = FirebaseAuth.getInstance().currentUser?.uid
+        db.collection("profile Image").document(currentUser!!).get().addOnSuccessListener {it ->
+            var imageUri = it.toObject<ProfilePic>()?.profileImage.toString()
+            Picasso.get().load(imageUri).into(userProfilePic)
+        }
+    }
+
+    private fun getFavoriteList(uid: String) {
         val db = Firebase.firestore
         val favoriteListRef = db.collection("users").document(uid).collection("favoriteRecipes")
 
@@ -57,9 +72,7 @@ class CustomerAccountActivity : AppCompatActivity() {
         }
     }
 
-
-
-    fun getUserInfo(uid: String) {
+    private fun getUserInfo(uid: String) {
         val db = Firebase.firestore
         val userRef = db.collection("Users").document(uid)
 
@@ -77,6 +90,10 @@ class CustomerAccountActivity : AppCompatActivity() {
         }
     }
 
+    fun goToEditProfileActivity(view: View) {
+        val intent = Intent(this, EditCustomerProfileActivity::class.java)
+        startActivity(intent)
+    }
 
     fun logOut(view: View) {
         auth.signOut()

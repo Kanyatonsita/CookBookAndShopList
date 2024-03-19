@@ -12,4 +12,7 @@
     <string name="save_user_error_message">Lyckas inte skapa konto!</string>
     <string name="save_user_message">Hurra! Du lyckas att skapat ett konto</string>
     <string name="fetch_user_data_error_message">Error fetching user data</string>
+    <string name="load_user_information_error_message">Exception in loadUserInformation:</string>
+    <string name="profile_updated_success_message">Profilen har uppdaterats</string>
+    <string name="update_user_data_error_message">Error updating user data:</string>
 </resources>
