@@ -23,6 +23,8 @@ class CustomerAccountActivity : AppCompatActivity() {
     private lateinit var currentUser: FirebaseUser
     private lateinit var userProfilePic: ImageView
 
+    val EDIT_PROFILE_REQUEST_CODE = 1 // Define a request code, it can be any integer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_customer_account)
@@ -37,12 +39,21 @@ class CustomerAccountActivity : AppCompatActivity() {
         getFavoriteList(currentUser.uid)
     }
 
-    private fun downloadImage(){
+    private fun downloadImage() {
         val db = Firebase.firestore
         val currentUser = FirebaseAuth.getInstance().currentUser?.uid
-        db.collection("profile Image").document(currentUser!!).get().addOnSuccessListener {it ->
-            var imageUri = it.toObject<ProfilePic>()?.profileImage.toString()
-            Picasso.get().load(imageUri).into(userProfilePic)
+        db.collection("profile Image").document(currentUser!!).get().addOnSuccessListener { document ->
+            val profilePicUrl = document.toObject<ProfilePic>()?.profileImage
+            if (!profilePicUrl.isNullOrEmpty()) {
+                // Ladda ner och visa bilden
+                Picasso.get().load(profilePicUrl).into(userProfilePic)
+            } else {
+                // Om ingen profilbild finns, visa en standardbild
+                userProfilePic.setImageResource(R.drawable.baseline_account_circle_24)
+
+            }
+        }.addOnFailureListener { e ->
+            Log.e("CustomerAccountActivity", "Error fetching profile image", e)
         }
     }
 
@@ -92,7 +103,7 @@ class CustomerAccountActivity : AppCompatActivity() {
 
     fun goToEditProfileActivity(view: View) {
         val intent = Intent(this, EditCustomerProfileActivity::class.java)
-        startActivity(intent)
+        startActivityForResult(intent, EDIT_PROFILE_REQUEST_CODE)
     }
 
     fun logOut(view: View) {
@@ -101,5 +112,13 @@ class CustomerAccountActivity : AppCompatActivity() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == EDIT_PROFILE_REQUEST_CODE && resultCode == RESULT_OK) {
+            // Refresh the profile image after editing
+            downloadImage()
+        }
     }
 }
