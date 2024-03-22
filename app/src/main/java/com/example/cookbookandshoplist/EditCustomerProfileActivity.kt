@@ -1,5 +1,6 @@
 package com.example.cookbookandshoplist
 
+import android.app.Activity
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -19,18 +20,21 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
+import com.google.firebase.storage.storage
 
 class EditCustomerProfileActivity : AppCompatActivity() {
+
     private lateinit var auth: FirebaseAuth
     private lateinit var currentUser: FirebaseUser
-    lateinit var db : FirebaseFirestore
-
 
     private lateinit var editTextFirstName: EditText
     private lateinit var editTextLastName: EditText
-    lateinit var dowLoadImageView : ImageView
-    private var imageUri : Uri? = null
-    lateinit var storageRef : StorageReference
+    private lateinit var dowLoadImageView: ImageView
+    private var imageUri: Uri? = null
+
+    val storageRef = Firebase.storage.reference.child("profileImages")
+    val db = Firebase.firestore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_customer_profile)
@@ -49,9 +53,6 @@ class EditCustomerProfileActivity : AppCompatActivity() {
             saveNewProfile(currentUser.uid)
         }
 
-        storageRef = FirebaseStorage.getInstance().reference.child("profileImages")
-        db = FirebaseFirestore.getInstance()
-
         dowLoadImageView.setOnClickListener{
             resultLauncher.launch("image/*")
         }
@@ -65,23 +66,20 @@ class EditCustomerProfileActivity : AppCompatActivity() {
     }
 
     /* Updates user in Users collection
-    * with profile picture uploaded
-    * from storage in Uri format. */
+    with profile picture uploaded
+    from storage in Uri format. */
     private fun sendUriToUserDoc(currentUser : FirebaseUser, profilePicUri : ProfilePic) {
-        db.collection("Users")
-            .whereEqualTo("uid", currentUser.uid)
-            .get()
-            .addOnSuccessListener { documents ->
-                for (document in documents) {
-                    Log.d("uid_query", "${document.id} => ${document.data}")
-                    val userDocId = document.toObject<User>().documentId
+        db.collection("Users").whereEqualTo("uid", currentUser.uid).get().addOnSuccessListener { documents ->
+            for (document in documents) {
+                Log.d("uid_query", "${document.id} => ${document.data}")
+                val userDocId = document.toObject<User>().documentId
 
-                    db.collection("Users").document(userDocId)
-                        .update("profilePic", profilePicUri.profileImage)
-                    Log.d("user_pic", "Profile pic with Uri ${profilePicUri.toString()} added to user.")
+                db.collection("Users").document(userDocId)
+                    .update("profilePic", profilePicUri.profileImage)
+                Log.d("user_pic", "Profile pic with Uri ${profilePicUri.toString()} added to user.")
 
-                }
             }
+        }
             .addOnFailureListener { e ->
                 Log.d("uid_query", "Uid not found.")
             }
@@ -89,7 +87,7 @@ class EditCustomerProfileActivity : AppCompatActivity() {
 
     // to upload the image to dataBase.
     private fun uploadImage(){
-        storageRef = storageRef.child(System.currentTimeMillis().toString())
+        val storageRef = storageRef.child(System.currentTimeMillis().toString())
         imageUri?.let {
             storageRef.putFile(it).addOnCompleteListener{ task ->
                 if (task.isSuccessful){
@@ -100,6 +98,8 @@ class EditCustomerProfileActivity : AppCompatActivity() {
                                 Toast.makeText(this, "Upload successful!", Toast.LENGTH_SHORT).show()
                             }
                         sendUriToUserDoc(currentUser, profilePicUri)
+                        setResult(Activity.RESULT_OK)
+                        finish() // Finish the activity after uploading the image
                     }
                 }
                 else{
@@ -147,10 +147,9 @@ class EditCustomerProfileActivity : AppCompatActivity() {
                 "firstName", newFirstName,
                 "lastName", newLastName
             ).addOnSuccessListener {
-                uploadImage()
                 // Successfully updated user information
                 Toast.makeText(this, getString(R.string.profile_updated_success_message), Toast.LENGTH_SHORT).show()
-                finish() // Close the EditProfileActivity
+                uploadImage()
             }.addOnFailureListener { e ->
                 Log.e("EditProfile", getString(R.string.update_user_data_error_message)+"$e")
                 // Handle the failure case if needed
@@ -162,5 +161,6 @@ class EditCustomerProfileActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }
+
 
 data class ProfilePic(val profileImage : String? = null)
