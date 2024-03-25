@@ -141,18 +141,47 @@ class EditCustomerProfileActivity : AppCompatActivity() {
         if (newFirstName.isEmpty() || newLastName.isEmpty()){
             showToast(getString(R.string.fill_all_fields_message))
             return
-        }else{
-            // Update user information in Firestore
-            userRef.update(
-                "firstName", newFirstName,
-                "lastName", newLastName
-            ).addOnSuccessListener {
-                // Successfully updated user information
-                Toast.makeText(this, getString(R.string.profile_updated_success_message), Toast.LENGTH_SHORT).show()
-                uploadImage()
+        } else {
+            // Retrieve current user data from Firestore
+            userRef.get().addOnSuccessListener { documentSnapshot ->
+                if (documentSnapshot.exists()) {
+                    val user = documentSnapshot.toObject<User>()
+                    if (user != null) {
+                        val currentFirstName = user.firstName
+                        val currentLastName = user.lastName
+
+                        // Check if the name or the image has been changed
+                        val nameChanged = newFirstName != currentFirstName || newLastName != currentLastName
+                        val imageChanged = imageUri != null
+
+                        if (nameChanged || imageChanged) {
+                            // Update user information in Firestore
+                            userRef.update(
+                                "firstName", newFirstName,
+                                "lastName", newLastName
+                            ).addOnSuccessListener {
+                                // Successfully updated user information
+                                Toast.makeText(this, getString(R.string.profile_updated_success_message), Toast.LENGTH_SHORT).show()
+                                if (imageChanged) {
+                                    uploadImage()
+                                } else {
+                                    // Navigate back if only name is updated and image is not changed
+                                    setResult(Activity.RESULT_OK)
+                                    finish()
+                                }
+                            }.addOnFailureListener { e ->
+                                Log.e("EditProfile", getString(R.string.update_user_data_error_message) + "$e")
+                                // Handle the failure case if needed
+                            }
+                        } else {
+                            // Navigate back if neither name nor image is changed
+                            setResult(Activity.RESULT_OK)
+                            finish()
+                        }
+                    }
+                }
             }.addOnFailureListener { e ->
-                Log.e("EditProfile", getString(R.string.update_user_data_error_message)+"$e")
-                // Handle the failure case if needed
+                Log.e("EditProfile", getString(R.string.fetch_user_data_error_message) + ": $e")
             }
         }
     }
